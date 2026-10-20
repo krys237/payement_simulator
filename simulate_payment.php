@@ -14,6 +14,7 @@ $order       = null;
 $order_id    = intval($_GET['order_id'] ?? 0);
 
 if ($order_id > 0) {
+    
     $stmt = $conn->prepare("
         SELECT o.id, o.order_number, o.amount, o.status, o.created_at,
                c.name AS client_name, c.email AS client_email
@@ -59,6 +60,7 @@ $pendingOrders = $conn->query("
 ");
 
 $remainingSeconds = 0;
+
 if ($order && $order['status'] === 'PENDING') {
 
     $createdTimestamp  = strtotime($order['created_at']);

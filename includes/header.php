@@ -1,50 +1,92 @@
 <?php
 // ============================================================
-// En-tête responsive avec fil d'ariane et badge
+// En-tête responsive — Design « Claude »
+// Palette : crème #FAF9F5 · encre #1F1E1D · terracotta #C96442
+// $pageTitle doit être défini AVANT l'inclusion (optionnel)
 // ============================================================
+
+$pageTitle = $pageTitle ?? 'Tableau de bord';
 ?>
 
-<header class="sticky top-0 z-20 bg-[#FAFAF9]/80 backdrop-blur-xl border-b border-stone-200/60">
-    
-    <div class="flex items-center justify-between px-4 sm:px-6 lg:px-8 py-3.5">
+<style>
+    /* Petite touche typographique pour le titre (optionnel) */
+    #appHeader h2 { letter-spacing: -0.01em; }
+</style>
 
-        <!-- Gauche : Hamburger + Titre -->
-        <div class="flex items-center gap-3">
+<header id="appHeader"
+        class="sticky top-0 z-20 border-b border-[#EAE6DD] bg-[#FAF9F5]/85 backdrop-blur-xl">
+
+    <div class="flex items-center justify-between gap-4 px-4 py-3 sm:px-6 lg:px-8">
+
+        <!-- Gauche : Hamburger + Fil d'ariane + Titre -->
+        <div class="flex min-w-0 items-center gap-2.5">
+
             <!-- Bouton hamburger mobile -->
             <button id="menuBtn"
                     onclick="toggleSidebar()"
-                    class="lg:hidden p-2 -ml-2 rounded-xl text-stone-500 hover:bg-stone-100 hover:text-stone-800 transition-all duration-200 active:scale-95">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+                    aria-label="Ouvrir le menu"
+                    class="-ml-2 rounded-lg p-2 text-[#6B665D] transition-colors duration-150
+                           hover:bg-[#F1EEE6] hover:text-[#1F1E1D]
+                           active:scale-95 lg:hidden">
+                <svg class="h-[19px] w-[19px]" fill="none" stroke="currentColor" stroke-width="1.8"
+                     stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+                    <path d="M4 7h16M4 12h16M4 17h16"/>
                 </svg>
             </button>
 
             <!-- Fil d'ariane + titre -->
-            <div class="flex flex-col">
-                <div class="hidden sm:flex items-center gap-1.5 text-[11px] text-stone-400 mb-0.5">
+            <div class="flex min-w-0 flex-col">
+
+                <!-- Fil d'ariane (desktop) -->
+                <nav class="mb-0.5 hidden items-center gap-1.5 text-[11px] text-[#A8A29A] sm:flex"
+                     aria-label="Fil d'ariane">
                     <span>PaySimu</span>
-                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                    <svg class="h-2.5 w-2.5 text-[#C9C3B8]" fill="none" stroke="currentColor" stroke-width="2"
+                         stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+                        <path d="M9 5l7 7-7 7"/>
                     </svg>
-                    <span class="text-stone-600"><?= htmlspecialchars($pageTitle ?? 'Page') ?></span>
-                </div>
-                <h2 class="text-[15px] sm:text-[17px] font-semibold tracking-tight text-stone-800">
-                    <?= htmlspecialchars($pageTitle ?? 'Tableau de bord') ?>
+                    <span class="truncate font-medium text-[#6B665D]">
+                        <?= htmlspecialchars($pageTitle) ?>
+                    </span>
+                </nav>
+
+                <!-- Titre de la page -->
+                <h2 class="truncate font-serif text-[16px] font-medium text-[#1F1E1D] sm:text-[18px]">
+                    <?= htmlspecialchars($pageTitle) ?>
                 </h2>
             </div>
         </div>
 
         <!-- Droite : Horodatage + Avatar -->
-        <div class="flex items-center gap-3">
-            <div class="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-stone-100/80 rounded-lg">
-                <svg class="w-3.5 h-3.5 text-stone-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        <div class="flex shrink-0 items-center gap-2.5">
+
+            <!-- Horodatage (desktop) -->
+            <div class="hidden items-center gap-2 rounded-lg border border-[#EAE6DD] bg-[#F3F0E8]
+                        px-3 py-1.5 sm:flex">
+                <svg class="h-3.5 w-3.5 text-[#A8A29A]" fill="none" stroke="currentColor"
+                     stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"
+                     viewBox="0 0 24 24">
+                    <circle cx="12" cy="12" r="8.5"/>
+                    <path d="M12 7.5v4.5l3 1.75"/>
                 </svg>
-                <span class="text-[12px] font-medium text-stone-500"><?= date('d/m/Y H:i') ?></span>
+                <span class="text-[11.5px] font-medium tabular-nums text-[#6B665D]">
+                    <?= date('d/m/Y H:i') ?>
+                </span>
             </div>
-            <div class="w-8 h-8 rounded-xl bg-gradient-to-br from-[#D97757] to-[#C2553A] flex items-center justify-center text-white text-xs font-bold shadow-sm">
+
+            <!-- Séparateur vertical -->
+            <span class="hidden h-5 w-px bg-[#EAE6DD] sm:block"></span>
+
+            <!-- Avatar -->
+            <button type="button"
+                    aria-label="Menu du compte"
+                    class="flex h-8 w-8 items-center justify-center rounded-[10px]
+                           bg-[#C96442] font-serif text-[13px] font-medium text-white
+                           shadow-[0_1px_3px_rgba(201,100,66,0.35)]
+                           ring-1 ring-[#C96442]/20 transition-transform duration-150
+                           hover:scale-[1.03] active:scale-95">
                 A
-            </div>
+            </button>
         </div>
     </div>
 </header>
