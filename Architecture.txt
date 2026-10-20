@@ -1,0 +1,16 @@
+payment-simulation/
+├── README.md       ← Documentation principale       
+├── database.sql
+├── db.php
+├── index.php
+├── checkout.php
+├── simulate_payment.php
+├── stats.php
+├── includes/
+│   ├── sidebar.php
+│   ├── header.php
+│   └── expire_orders.php
+├── api/v1/payment/
+│   └── callback.php
+└── assets/js/
+    └── main.js
