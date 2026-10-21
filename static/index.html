@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Accueil · Paiements Mobile Money</title>
+  <link rel="stylesheet" href="/static/css/style.css" />
+</head>
+<body>
+  <header class="entete">
+    <div class="conteneur entete-contenu">
+      <a href="/" class="marque">
+        <span class="logo">MM</span>
+        <span>Paiements Mobile Money</span>
+      </a>
+      <nav class="nav-liens">
+        <a href="/">Accueil</a>
+        <a href="/commandes">Commandes</a>
+        <a href="/docs">API</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="conteneur">
+    <section class="hero">
+      <p class="etiquette">Projet TP 3 · Webhook sécurisé</p>
+      <h1>Suivez vos paiements Mobile Money en temps réel</h1>
+      <p class="hero-texte">
+        Réception des notifications de l'opérateur, vérification de leur authenticité
+        par HMAC-SHA256 et mise à jour atomique du statut de chaque commande.
+      </p>
+      <div class="actions">
+        <a class="bouton bouton-principal" href="/commandes">Voir les commandes</a>
+        <a class="bouton" href="/docs">Documentation de l'API</a>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="cartes-stats">
+        <article class="carte stat">
+          <span>Commandes au total</span>
+          <strong id="stat-total">—</strong>
+        </article>
+        <article class="carte stat">
+          <span>Paiements confirmés</span>
+          <strong id="stat-payees">—</strong>
+        </article>
+        <article class="carte stat">
+          <span>En attente</span>
+          <strong id="stat-attente">—</strong>
+        </article>
+        <article class="carte stat">
+          <span>Montant encaissé</span>
+          <strong id="stat-encaisse">—</strong>
+        </article>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>Comment ça fonctionne</h2>
+      <div class="etapes">
+        <article class="carte etape">
+          <span class="numero">1</span>
+          <h3>Le client paie</h3>
+          <p>Le paiement est initié auprès de l'opérateur Mobile Money depuis le téléphone du client.</p>
+        </article>
+        <article class="carte etape">
+          <span class="numero">2</span>
+          <h3>L'opérateur notifie</h3>
+          <p>Un callback JSON est envoyé au webhook, accompagné d'une signature HMAC-SHA256 dans l'en-tête X-Signature.</p>
+        </article>
+        <article class="carte etape">
+          <span class="numero">3</span>
+          <h3>Le serveur vérifie et met à jour</h3>
+          <p>La signature est contrôlée avant tout traitement, puis la commande passe à PAID ou FAILED en une seule opération.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="entete-page">
+        <h2>Dernières commandes</h2>
+        <a href="/commandes">Tout voir →</a>
+      </div>
+      <div class="carte">
+        <ul class="liste-simple" id="recentes">
+          <li class="message">Chargement…</li>
+        </ul>
+      </div>
+    </section>
+  </main>
+
+  <footer class="pied">
+    <div class="conteneur">Projet TP 3 · Récepteur de webhook Mobile Money · FastAPI et SQLite</div>
+  </footer>
+
+  <script src="/static/js/app.js"></script>
+  <script>
+    async function chargerAccueil() {
+      const zone = document.getElementById("recentes");
+      try {
+        const commandes = await api("/orders");
+        const payees = commandes.filter((c) => c.status === "PAID");
+        const attente = commandes.filter((c) => c.status === "PENDING");
+        const encaisse = payees.reduce((somme, c) => somme + c.amount, 0);
+
+        document.getElementById("stat-total").textContent = commandes.length;
+        document.getElementById("stat-payees").textContent = payees.length;
+        document.getElementById("stat-attente").textContent = attente.length;
+        document.getElementById("stat-encaisse").textContent = formatMontant(encaisse);
+
+        zone.innerHTML = commandes.length
+          ? commandes.slice(0, 3).map((c) => `
+              <li>
+                <a class="lien-ligne" href="/commandes/${encodeURIComponent(c.id)}">${echapper(c.id)}</a>
+                <span class="montant">${formatMontant(c.amount)}</span>
+                ${badge(c.status)}
+              </li>`).join("")
+          : '<li class="message">Aucune commande enregistrée.</li>';
+      } catch (erreur) {
+        zone.innerHTML = `<li class="message">Impossible de joindre l'API : ${echapper(erreur.message)}</li>`;
+      }
+    }
+
+    chargerAccueil();
+  </script>
+</body>
+</html>

@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Commandes · Paiements Mobile Money</title>
+  <link rel="stylesheet" href="/static/css/style.css" />
+</head>
+<body>
+  <header class="entete">
+    <div class="conteneur entete-contenu">
+      <a href="/" class="marque">
+        <span class="logo">MM</span>
+        <span>Paiements Mobile Money</span>
+      </a>
+      <nav class="nav-liens">
+        <a href="/">Accueil</a>
+        <a href="/commandes">Commandes</a>
+        <a href="/docs">API</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="conteneur">
+    <div class="entete-page">
+      <div>
+        <h1>Commandes</h1>
+        <p class="sous-titre">Historique des commandes et statut des paiements</p>
+      </div>
+      <button class="bouton" id="actualiser" type="button">Actualiser</button>
+    </div>
+
+    <div class="filtres" role="group" aria-label="Filtrer par statut">
+      <button class="filtre actif" data-filtre="ALL" type="button">Toutes</button>
+      <button class="filtre" data-filtre="PENDING" type="button">En attente</button>
+      <button class="filtre" data-filtre="PAID" type="button">Payées</button>
+      <button class="filtre" data-filtre="FAILED" type="button">Échouées</button>
+    </div>
+
+    <div class="carte carte-tableau">
+      <table>
+        <thead>
+          <tr>
+            <th>Commande</th>
+            <th>Montant</th>
+            <th>Statut</th>
+            <th>Transaction</th>
+            <th>Mise à jour</th>
+            <th><span class="visually-hidden"></span></th>
+          </tr>
+        </thead>
+        <tbody id="corps-tableau">
+          <tr><td colspan="6" class="message">Chargement…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </main>
+
+  <footer class="pied">
+    <div class="conteneur">Projet TP 3 · Récepteur de webhook Mobile Money · FastAPI et SQLite</div>
+  </footer>
+
+  <script src="/static/js/app.js"></script>
+  <script>
+    let toutesLesCommandes = [];
+    let filtreActif = "ALL";
+
+    async function chargerCommandes() {
+      const corps = document.getElementById("corps-tableau");
+      corps.innerHTML = '<tr><td colspan="6" class="message">Chargement…</td></tr>';
+      try {
+        toutesLesCommandes = await api("/orders");
+        afficherCommandes();
+      } catch (erreur) {
+        corps.innerHTML = `<tr><td colspan="6" class="message">Impossible de charger les commandes : ${echapper(erreur.message)}</td></tr>`;
+      }
+    }
+
+    function afficherCommandes() {
+      const corps = document.getElementById("corps-tableau");
+      const liste = filtreActif === "ALL"
+        ? toutesLesCommandes
+        : toutesLesCommandes.filter((c) => c.status === filtreActif);
+
+      if (liste.length === 0) {
+        corps.innerHTML = '<tr><td colspan="6" class="message">Aucune commande pour ce filtre.</td></tr>';
+        return;
+      }
+
+      corps.innerHTML = liste.map((c) => {
+        const lien = `/commandes/${encodeURIComponent(c.id)}`;
+        return `
+          <tr>
+            <td><a class="lien-ligne" href="${lien}">${echapper(c.id)}</a></td>
+            <td class="montant">${formatMontant(c.amount)}</td>
+            <td>${badge(c.status)}</td>
+            <td>${echapper(c.transaction_id || "—")}</td>
+            <td>${formatDate(c.updated_at)}</td>
+            <td><a href="${lien}">Voir →</a></td>
+          </tr>`;
+      }).join("");
+    }
+
+    document.querySelectorAll(".filtre").forEach((bouton) => {
+      bouton.addEventListener("click", () => {
+        filtreActif = bouton.dataset.filtre;
+        document.querySelectorAll(".filtre").forEach((b) => b.classList.toggle("actif", b === bouton));
+        afficherCommandes();
+      });
+    });
+
+    document.getElementById("actualiser").addEventListener("click", chargerCommandes);
+
+    chargerCommandes();
+  </script>
+</body>
+</html>

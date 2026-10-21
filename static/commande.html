@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Détail de commande · Paiements Mobile Money</title>
+  <link rel="stylesheet" href="/static/css/style.css" />
+</head>
+<body>
+  <header class="entete">
+    <div class="conteneur entete-contenu">
+      <a href="/" class="marque">
+        <span class="logo">MM</span>
+        <span>Paiements Mobile Money</span>
+      </a>
+      <nav class="nav-liens">
+        <a href="/">Accueil</a>
+        <a href="/commandes">Commandes</a>
+        <a href="/docs">API</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="conteneur">
+    <nav class="fil-ariane" aria-label="Fil d'Ariane">
+      <a href="/commandes">Commandes</a> / <span id="fil-id">Chargement…</span>
+    </nav>
+
+    <div class="grille-detail">
+      <article class="carte">
+        <div class="detail-entete">
+          <h1 id="titre">Commande</h1>
+          <span id="statut"></span>
+        </div>
+        <dl class="infos">
+          <div>
+            <dt>Montant</dt>
+            <dd id="montant">—</dd>
+          </div>
+          <div>
+            <dt>Transaction</dt>
+            <dd id="transaction">—</dd>
+          </div>
+          <div>
+            <dt>Dernière mise à jour</dt>
+            <dd id="maj">—</dd>
+          </div>
+        </dl>
+      </article>
+
+      <aside class="carte">
+        <h2>Simulation opérateur</h2>
+        <p class="aide">
+          Envoie une notification signée au webhook, comme le ferait Mobile Money.
+          Disponible uniquement pour les commandes en attente.
+        </p>
+        <div class="actions-verticales">
+          <button class="bouton bouton-principal" data-issue="SUCCESS" type="button" disabled>Paiement réussi</button>
+          <button class="bouton bouton-danger" data-issue="FAILED" type="button" disabled>Paiement échoué</button>
+        </div>
+        <p id="retour" class="retour" role="status"></p>
+      </aside>
+    </div>
+
+    <section class="carte section">
+      <h2>Parcours de la commande</h2>
+      <ol class="timeline" id="timeline">
+        <li><strong>Chargement…</strong></li>
+      </ol>
+    </section>
+  </main>
+
+  <footer class="pied">
+    <div class="conteneur">Projet TP 3 · Récepteur de webhook Mobile Money · FastAPI et SQLite</div>
+  </footer>
+
+  <script src="/static/js/app.js"></script>
+  <script>
+    const idCommande = decodeURIComponent(location.pathname.split("/").pop());
+
+    async function chargerCommande() {
+      try {
+        const commande = await api("/orders/" + encodeURIComponent(idCommande));
+        afficherCommande(commande);
+      } catch (erreur) {
+        document.querySelector("main").innerHTML = `
+          <div class="carte section">
+            <h1>Commande introuvable</h1>
+            <p class="aide">${echapper(erreur.message)}</p>
+            <div class="actions">
+              <a class="bouton bouton-principal" href="/commandes">Retour aux commandes</a>
+            </div>
+          </div>`;
+      }
+    }
+
+    function afficherCommande(c) {
+      document.title = `Commande ${c.id} · Paiements Mobile Money`;
+      document.getElementById("fil-id").textContent = c.id;
+      document.getElementById("titre").textContent = `Commande ${c.id}`;
+      document.getElementById("statut").innerHTML = badge(c.status);
+      document.getElementById("montant").textContent = formatMontant(c.amount);
+      document.getElementById("transaction").textContent = c.transaction_id || "En attente de notification";
+      document.getElementById("maj").textContent = formatDate(c.updated_at);
+
+      const enAttente = c.status === "PENDING";
+      document.querySelectorAll("[data-issue]").forEach((bouton) => {
+        bouton.disabled = !enAttente;
+      });
+
+      const notifiee = !enAttente;
+      const payee = c.status === "PAID";
+      const echouee = c.status === "FAILED";
+
+      let classeFinale = "";
+      let titreFinal = "Résultat final";
+      let texteFinal = "Non déterminé";
+      if (payee) {
+        classeFinale = "fait";
+        titreFinal = "Paiement confirmé";
+        texteFinal = "Statut passé à PAID";
+      } else if (echouee) {
+        classeFinale = "fait-echec";
+        titreFinal = "Paiement échoué";
+        texteFinal = "Statut passé à FAILED";
+      }
+
+      document.getElementById("timeline").innerHTML = `
+        <li class="fait">
+          <strong>Commande créée</strong>
+          <span>Montant de ${formatMontant(c.amount)} enregistré</span>
+        </li>
+        <li class="${notifiee ? "fait" : ""}">
+          <strong>Notification de l'opérateur</strong>
+          <span>${notifiee ? "Callback reçu et signature vérifiée" : "En attente du résultat du paiement"}</span>
+        </li>
+        <li class="${classeFinale}">
+          <strong>${titreFinal}</strong>
+          <span>${texteFinal}</span>
+        </li>`;
+    }
+
+    async function simuler(issue) {
+      const retour = document.getElementById("retour");
+      retour.className = "retour";
+      retour.textContent = "Envoi de la notification signée…";
+      document.querySelectorAll("[data-issue]").forEach((bouton) => (bouton.disabled = true));
+
+      try {
+        const reponse = await api(
+          `/demo/simulate/${encodeURIComponent(idCommande)}?outcome=${issue}`,
+          { method: "POST" }
+        );
+        retour.classList.add("ok");
+        retour.textContent = reponse.detail
+          ? reponse.detail
+          : `Statut mis à jour : ${STATUTS[reponse.status]?.libelle ?? reponse.status}.`;
+      } catch (erreur) {
+        retour.classList.add("erreur");
+        retour.textContent = erreur.message;
+      }
+
+      // Recharge la commande : les boutons se réactivent uniquement si elle est encore en attente.
+      await chargerCommande();
+    }
+
+    document.querySelectorAll("[data-issue]").forEach((bouton) => {
+      bouton.addEventListener("click", () => simuler(bouton.dataset.issue));
+    });
+
+    chargerCommande();
+  </script>
+</body>
+</html>

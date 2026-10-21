@@ -1,0 +1,4 @@
+fastapi
+uvicorn
+httpx
+pydantic==2.11.7
